@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wheel Randomizer</title>
+    <link rel="stylesheet" href="randomsy.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Wheel Randomizer</h1>
+        <canvas id="wheel" width="500" height="500"></canvas>
+        <button id="spinButton">Spin</button>
+        <h2 id="result"></h2>
+
+        <div class="controls">
+            <input type="text" id="newOption" placeholder="Add a new option">
+            <button id="addOption">Add Option</button>
+        </div>
+
+        <ul id="optionList"></ul>
+    </div>
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <h2>Result</h2>
+            <p id="modalResult"></p>
+        </div>
+    </div>
+   
+   
+</div>
+
+
+    <script>
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const spinButton = document.getElementById('spinButton');
+        const resultElement = document.getElementById('result');
+        const newOptionInput = document.getElementById('newOption');
+        const addOptionButton = document.getElementById('addOption');
+        const optionList = document.getElementById('optionList');
+
+        let options = ['Ink', 'Zithile', '英英', '吉賽兒'];
+        let startAngle = 0;
+        let spinning = false;
+
+        function drawWheel() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 10;
+            const anglePerOption = (2 * Math.PI) / options.length;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            options.forEach((option, index) => {
+                const startAngleOption = startAngle + index * anglePerOption;
+                const endAngleOption = startAngle + (index + 1) * anglePerOption;
+
+                // Set random colors
+                const hue = (index / options.length) * 360;
+                ctx.fillStyle = `hsl(${hue}, 70%, 70%)`;
+
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngleOption, endAngleOption);
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw text
+                const textAngle = (startAngleOption + endAngleOption) / 2;
+                const textX = centerX + (radius / 2) * Math.cos(textAngle);
+                const textY = centerY + (radius / 2) * Math.sin(textAngle);
+                ctx.save();
+                ctx.translate(textX, textY);
+                ctx.rotate(textAngle);
+                ctx.fillStyle = 'black';
+                ctx.font = '16px Arial';
+                ctx.fillText(option, -ctx.measureText(option).width / 2, 0);
+                ctx.restore();
+            });
+
+            // Draw center circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function spinWheel() {
+            if (spinning) return;
+
+            spinning = true;
+            const spinTime = 3000; // Total spin time in ms
+            const spinAngle = Math.random() * 360 + 720; // Random spin angle + 2 full rotations
+            const spinIncrement = spinAngle / (spinTime / 16); // Angle increment per frame
+
+            let currentAngle = 0;
+
+            const spinInterval = setInterval(() => {
+                currentAngle += spinIncrement;
+                startAngle = (startAngle + (spinIncrement * Math.PI) / 180) % (2 * Math.PI);
+                drawWheel();
+
+                if (currentAngle >= spinAngle) {
+                    clearInterval(spinInterval);
+                    spinning = false;
+
+                    const selectedOptionIndex = Math.floor((options.length - (startAngle / (2 * Math.PI)) * options.length) % options.length);
+                    const selectedOption = options[selectedOptionIndex];
+                    resultElement.textContent = `Result: ${selectedOption}`;
+                }
+            }, 16);
+        }
+
+        function addOption() {
+            const newOption = newOptionInput.value.trim();
+            if (newOption && !options.includes(newOption)) {
+                options.push(newOption);
+                updateOptionList();
+                drawWheel();
+                newOptionInput.value = '';
+            }
+        }
+
+        function removeOption(option) {
+            options = options.filter(opt => opt !== option);
+            updateOptionList();
+            drawWheel();
+        }
+
+        function updateOptionList() {
+            optionList.innerHTML = '';
+            options.forEach(option => {
+                const li = document.createElement('li');
+                li.textContent = option;
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.onclick = () => removeOption(option);
+                li.appendChild(removeButton);
+                optionList.appendChild(li);
+            });
+        }
+
+        spinButton.addEventListener('click', spinWheel);
+        addOptionButton.addEventListener('click', addOption);
+
+        drawWheel();
+        updateOptionList();
+    </script>
+</body>
+</html>
